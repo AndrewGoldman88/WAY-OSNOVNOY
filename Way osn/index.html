@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0A0B0F" />
+    <title>ПУТЬ — дисциплина и самоконтроль</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,6 90,28 90,72 50,94 10,72 10,28' fill='%230A0B0F' stroke='%238B5CF6' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='14' fill='%23D4AF37'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="manifest" href="manifest.json" />
+
+    <style>
+        #account-intro-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(6, 7, 10, .96);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity .35s ease, visibility .35s ease;
+        }
+
+        #account-intro-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .account-intro-inner {
+            width: min(100%, 430px);
+            text-align: center;
+            padding: 34px 24px 28px;
+            border: 1px solid var(--line, rgba(255,255,255,.12));
+            border-radius: 24px;
+            background: rgba(14, 15, 21, .88);
+            box-shadow: 0 24px 80px rgba(0,0,0,.45);
+        }
+
+        .account-intro-sigil {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 22px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--gold, #D4AF37);
+            border-radius: 50%;
+            color: var(--gold, #D4AF37);
+            font: 700 28px/1 'Cinzel', serif;
+            box-shadow: 0 0 30px rgba(212,175,55,.12);
+        }
+
+        .account-intro-title {
+            color: var(--text, #EDEBE6);
+            font: 700 clamp(25px, 7vw, 34px)/1.15 'Cinzel', serif;
+            letter-spacing: .02em;
+        }
+
+        .account-intro-sub {
+            margin: 14px auto 26px;
+            max-width: 350px;
+            color: var(--muted, rgba(237,235,230,.62));
+            font: 400 14px/1.65 'Manrope', sans-serif;
+        }
+
+        .account-intro-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .account-intro-btn {
+            width: 100%;
+            min-height: 52px;
+            padding: 13px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font: 700 13px/1.2 'Manrope', sans-serif;
+            letter-spacing: .04em;
+            transition: transform .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+        }
+
+        .account-intro-btn:active {
+            transform: scale(.985);
+        }
+
+        .account-intro-btn.primary {
+            border: 1px solid var(--violet, #8B5CF6);
+            background: var(--violet, #8B5CF6);
+            color: #fff;
+            box-shadow: 0 8px 28px rgba(139,92,246,.18);
+        }
+
+        .account-intro-btn.secondary {
+            border: 1px solid rgba(139,92,246,.5);
+            background: rgba(139,92,246,.08);
+            color: var(--text, #EDEBE6);
+        }
+
+        .account-intro-btn.guest {
+            border: 1px solid rgba(255,255,255,.12);
+            background: transparent;
+            color: rgba(237,235,230,.58);
+        }
+
+        .account-intro-note {
+            margin: 18px auto 0;
+            max-width: 350px;
+            color: rgba(237,235,230,.38);
+            font: 400 11px/1.55 'JetBrains Mono', monospace;
+        }
+
+        @media (max-width: 420px) {
+            .account-intro-inner { padding: 30px 18px 24px; }
+            .account-intro-title { font-size: 26px; }
+        }
+    </style>
+
+    <meta name="application-name" content="ПУТЬ" />
+    <meta name="apple-mobile-web-app-title" content="ПУТЬ" />
+</head>
+<body>
+
+    <!-- ===== DYNAMIC BG AURA ===== -->
+    <div class="bg-aura" id="bgAura">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <!-- ===== CANVASES ===== -->
+    <canvas id="particleCanvas"></canvas>
+    <canvas id="matrixRainCanvas"></canvas>
+
+    <!-- ===== APP ===== -->
+    <div id="app">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="brand">⟡ ПУТЬ</div>
+            <button class="settings-btn" onclick="openModal('settings')" aria-label="Настройки">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.36.4.68.74.9"/></svg>
+            </button>
+        </div>
+
+        <!-- HOME -->
+        <div class="view active" id="view-home">
+            <div class="hero">
+                <div class="sigil-wrap sigil-parallax" id="sigilWrap">
+                    <svg class="day-progress-ring" viewBox="0 0 250 250" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;">
+                        <circle cx="125" cy="125" r="118" fill="none" stroke="var(--line)" stroke-width="3" opacity="0.25"/>
+                        <circle id="dayProgressRing" cx="125" cy="125" r="118" fill="none" stroke="var(--violet)" stroke-width="3" stroke-linecap="round" stroke-dasharray="741" stroke-dashoffset="741" transform="rotate(-90 125 125)" style="transition:stroke-dashoffset 1s ease;filter:drop-shadow(0 0 6px var(--glow1));"/>
+                    </svg>
+                    <!-- Символ будет добавлен через CSS, оставляем пустым -->
+                </div>
+                <div class="day-display">
+                    <div class="day-num" id="dayNum">0</div>
+                    <div class="day-sub" id="daySub">—</div>
+                </div>
+                <div class="rank-name" id="rankName">—</div>
+                <div class="rank-next" id="rankNext">—</div>
+            </div>
+
+            <div class="aura-card">
+                <div class="aura-label">Твоя аура сейчас</div>
+                <div class="aura-text" id="auraText">—</div>
+            </div>
+
+            <!-- THREE DAILY TASKS -->
+            <div class="daily-tasks-section">
+                <div class="daily-tasks-heading" data-i18n="tasks_title">Задания дня</div>
+                <div class="daily-task-card task-spirit" id="taskCard-spirit">
+                    <button class="task-check" id="taskCheck-spirit" onclick="toggleDailyTask('spirit')" aria-label="Отметить выполнение"></button>
+                    <div class="task-body"><div class="task-category-label" id="taskLabel-spirit">Дух</div><div class="task-text" id="taskText-spirit">—</div></div>
+                </div>
+                <div class="daily-task-card task-mind" id="taskCard-mind">
+                    <button class="task-check" id="taskCheck-mind" onclick="toggleDailyTask('mind')" aria-label="Отметить выполнение"></button>
+                    <div class="task-body"><div class="task-category-label" id="taskLabel-mind">Разум</div><div class="task-text" id="taskText-mind">—</div></div>
+                </div>
+                <div class="daily-task-card task-body-card" id="taskCard-body">
+                    <button class="task-check" id="taskCheck-body" onclick="toggleDailyTask('body')" aria-label="Отметить выполнение"></button>
+                    <div class="task-body"><div class="task-category-label" id="taskLabel-body">Тело</div><div class="task-text" id="taskText-body">—</div></div>
+                </div>
+            </div>
+
+            <!-- WHEEL CHALLENGE -->
+            <div class="wheel-task-card" id="wheelTaskCard">
+                <div class="wheel-task-header">
+                    <div class="wheel-task-type" id="wheelTaskType">ВЫЗОВ ДНЯ</div>
+                </div>
+                <div class="wheel-task-text" id="wheelTaskText">—</div>
+                <div class="wheel-task-desc" id="wheelTaskDesc">—</div>
+                <div class="wheel-task-actions" id="wheelTaskActions">
+                    <button class="wheel-task-btn do" id="wheelTaskBtn" onclick="completeWheelTask()">Выполнил</button>
+                </div>
+            </div>
+
+            <div class="mood-card">
+                <div class="aura-label" style="color:var(--violet)">Настроение / энергия сегодня</div>
+                <div class="mood-scale" id="moodScale"></div>
+            </div>
+
+            <div class="action-row">
+                <button class="btn btn-panic" onclick="openModal('panic')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L14.7 3.86a2 2 0 00-3.4 0z"/></svg>
+                    Мне тяжело
+                </button>
+                <button class="btn btn-ghost" onclick="switchView('journal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Дневник
+                </button>
+            </div>
+            <button class="btn btn-violet" id="sexBtn" style="width:100%;margin-top:10px;display:none" onclick="openModal('sex')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.3-9.3-8.2C1 10 1.6 6.4 4.6 4.9c2.4-1.2 4.9-.3 6.4 1.6 1.5-1.9 4-2.8 6.4-1.6 3 1.5 3.6 5.1 1.9 7.9C18.7 16.7 12 21 12 21z"/></svg>
+                Был секс (не сбрасывает стрик)
+            </button>
+        </div>
+
+        <!-- JOURNAL -->
+        <div class="view" id="view-journal">
+            <div class="section-title"><div class="dash"></div>Дневник пути</div>
+            <div class="journal-add">
+                <textarea id="journalInput" placeholder="Что происходит сегодня? Мысли, состояние, победы..."></textarea>
+                <button onclick="addJournal()">Сохранить запись</button>
+            </div>
+            <div id="journalList"></div>
+        </div>
+
+        <!-- CALENDAR -->
+        <div class="view" id="view-calendar">
+            <div class="section-title"><div class="dash"></div>Календарь пути</div>
+            <div class="calendar-card">
+                <div class="calendar-head">
+                    <div class="calendar-month" id="calendarMonth">—</div>
+                    <div class="calendar-nav">
+                        <button type="button" onclick="calendarMove(-1)" aria-label="Предыдущий месяц">‹</button>
+                        <button type="button" onclick="calendarMove(1)" aria-label="Следующий месяц">›</button>
+                    </div>
+                </div>
+                <div class="calendar-week"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div></div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+                <div class="calendar-legend">
+                    <span><i></i>чистый день</span><span><i class="lg-hard"></i>сложный день</span><span><i class="lg-relapse"></i>срыв</span><span><i class="lg-rank">★</i>новый ранг</span>
+                </div>
+                <div class="calendar-detail" id="calendarDetail"></div>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="view" id="view-stats">
+            <div class="section-title"><div class="dash"></div>Статистика</div>
+
+            <div class="stat-hero" id="statHero">
+                <div class="stat-hero-ring">
+                    <svg viewBox="0 0 90 90">
+                        <circle class="track" cx="45" cy="45" r="40"/>
+                        <circle class="fill" id="statHeroRingFill" cx="45" cy="45" r="40"/>
+                    </svg>
+                    <div class="stat-hero-num">
+                        <div class="n" id="statCurrent">0</div>
+                        <div class="u">день</div>
+                    </div>
+                </div>
+                <div class="stat-hero-info">
+                    <div class="stat-hero-title" id="statHeroTitle">Путь начат</div>
+                    <div class="stat-hero-sub" id="statHeroSub">Собираем данные…</div>
+                </div>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-box" id="statBoxBest"><div class="num" id="statBest">0</div><div class="lab">Рекорд</div><div class="bar-underlay" id="statBarBest"></div></div>
+                <div class="stat-box" id="statBoxAttempts"><div class="num" id="statAttempts">0</div><div class="lab">Попыток</div><div class="bar-underlay" id="statBarAttempts"></div></div>
+                <div class="stat-box" id="statBoxTotal"><div class="num" id="statTotal">0</div><div class="lab">Дней всего практики</div><div class="bar-underlay" id="statBarTotal"></div></div>
+                <div class="stat-box" id="statBoxAvg"><div class="num" id="statAvg">0</div><div class="lab">Средний стрик</div><div class="bar-underlay" id="statBarAvg"></div></div>
+            </div>
+            <div class="section-title"><div class="dash"></div>История стриков</div>
+            <div id="barsWrap"></div>
+
+            <div class="section-title"><div class="dash"></div><span data-i18n="tasks_stats_title">Задания</span></div>
+            <div id="taskStatsWrap"></div>
+
+            <div class="section-title"><div class="dash"></div>Настроение и энергия</div>
+            <div id="moodChartWrap"></div>
+            <div class="mode-note" id="moodInsight"></div>
+
+            <div class="section-title"><div class="dash"></div>Срывы и причины</div>
+            <div id="relapseList"></div>
+            <div class="section-title" id="sexSectionTitle" style="display:none"><div class="dash"></div>Секс без срыва</div>
+            <div id="sexLogList"></div>
+
+            <div class="section-title"><div class="dash"></div>Карта триггеров</div>
+            <div id="triggerMapWrap"></div>
+        </div>
+
+        <!-- RANKS -->
+        <div class="view" id="view-ranks">
+            <div class="section-title"><div class="dash"></div>Достижения</div>
+            <div class="badge-row" id="badgeRow"></div>
+
+            <div class="section-title"><div class="dash"></div>Награды пути</div>
+            <div class="cosmetic-group-label">Искры</div>
+            <div class="swatch-row" id="particleSwatches"></div>
+            <div class="cosmetic-group-label">Свечение фона</div>
+            <div class="swatch-row" id="bgSwatches"></div>
+            <div class="cosmetic-group-label">Мистика</div>
+            <div class="swatch-row" id="mysticSwatches"></div>
+
+            <div class="section-title"><div class="dash"></div>Лестница рангов</div>
+            <div id="ranksList"></div>
+        </div>
+
+    </div>
+
+    <!-- ===== NAVBAR ===== -->
+    <div class="navbar"><div class="navbar-inner">
+            <button class="nav-btn active" data-v="home" onclick="switchView('home')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg><span>ГЛАВНАЯ</span>
+            </button>
+            <button class="nav-btn" data-v="journal" onclick="switchView('journal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V4H6.5A2.5 2.5 0 004 6.5v13z"/></svg><span>ДНЕВНИК</span>
+            </button>
+            <button class="nav-btn" data-v="calendar" onclick="switchView('calendar')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h2M12 14h2M16 14h2M8 18h2M12 18h2"/></svg><span>КАЛЕНДАРЬ</span>
+            </button>
+            <button class="nav-btn" data-v="stats" onclick="switchView('stats')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><span>СТАТИСТИКА</span>
+            </button>
+            <button class="nav-btn" data-v="ranks" onclick="switchView('ranks')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-5.5 3 1.5-6-4-3.5 5.5-.5L12 2l2.5 6 5.5.5-4 3.5 1.5 6z"/></svg><span>РАНГИ</span>
+            </button>
+        </div></div>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- PANIC -->
+    <div class="modal-overlay" id="modal-panic">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('panic')">×</button>
+            <h2>Момент слабости</h2>
+            <div class="sub">Это пройдёт. Дай себе 60 секунд, прежде чем решать что-то.</div>
+            <div class="breath-ring"><span id="breathTimer">60</span></div>
+            <div id="whyBlock" style="display:none">
+                <div class="aura-label" style="margin-bottom:6px">Зачем ты это начал</div>
+                <div class="why-box" id="whyText"></div>
+            </div>
+            <div class="modal-quote" id="panicQuote"></div>
+            <div class="modal-btns">
+                <button class="btn btn-ghost" onclick="closeModal('panic')">Я справился, возвращаюсь к пути</button>
+                <button class="btn btn-panic" onclick="openRelapseFlow()">Всё же сорвался</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RELAPSE -->
+    <div class="modal-overlay" id="modal-relapse">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('relapse')">×</button>
+            <h2>Прежде чем всё обнулить</h2>
+            <div class="sub">Посмотри, что именно ты сейчас теряешь:</div>
+            <ul class="loss-list" id="lossList"></ul>
+            <div class="settings-field"><label>Что стало причиной?</label></div>
+            <div class="ob-options" id="relapseReasonOptions"></div>
+            <div id="relapseCustomWrap" style="display:none">
+                <textarea class="reason-box" id="reasonInput" placeholder="Опиши своими словами, что произошло..."></textarea>
+            </div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-ghost" onclick="closeModal('relapse')">Отмена, я остаюсь на пути</button>
+                <button class="btn btn-panic" id="relapseConfirmBtn" onclick="confirmRelapse()" style="opacity:.4;pointer-events:none">Подтвердить срыв и начать заново</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEX LOG -->
+    <div class="modal-overlay" id="modal-sex">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('sex')">×</button>
+            <h2>Отметить, что был секс</h2>
+            <div class="sub">Стрик не сбросится. Это просто отметка для статистики — как ты себя чувствуешь после?</div>
+            <div class="ob-options" id="sexFeelingOptions"></div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-ghost" onclick="closeModal('sex')">Отмена</button>
+                <button class="btn btn-violet" id="sexSaveBtn" onclick="saveSexLog()" style="opacity:.4;pointer-events:none">Сохранить отметку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('settings')">×</button>
+            <h2>Настройки пути</h2>
+            <div class="sub">Это хранится только в этом браузере, на этом устройстве.</div>
+
+            <div class="settings-field"><label>Язык / Language</label></div>
+            <div class="toggle-group">
+                <button class="toggle-pill" id="langPillRu" onclick="setLang('ru')">Русский</button>
+                <button class="toggle-pill" id="langPillEn" onclick="setLang('en')">English</button>
+            </div>
+
+            <div class="settings-field"><label>Тема оформления</label></div>
+            <div class="toggle-group">
+                <button class="toggle-pill" id="themePillDark" onclick="setTheme('dark')">Тёмная</button>
+                <button class="toggle-pill" id="themePillMatrix" onclick="setTheme('matrix')">Матрица</button>
+                <button class="toggle-pill" id="themePillBlue" onclick="setTheme('blue')">Синяя</button>
+            </div>
+
+            <div class="settings-field"><label>Режим пути</label></div>
+            <div class="toggle-group">
+                <button class="toggle-pill" id="modePillFull" onclick="setMode('full')">Полное воздержание</button>
+                <button class="toggle-pill" id="modePillNofap" onclick="setMode('nofap')">NoFap</button>
+            </div>
+            <div class="mode-note">В режиме NoFap секс с партнёром не считается срывом — для него есть отдельная кнопка на главном экране. Срывом остаются соло-разрядка и порно.</div>
+
+            <div class="settings-field"><label>Твоя причина ("зачем")</label>
+                <textarea id="whyInput" rows="3" placeholder="Например: хочу больше энергии, ясности и уважения к себе"></textarea>
+            </div>
+            <div class="settings-field"><label>Начало текущего стрика</label>
+                <input type="date" id="startInput">
+            </div>
+            <button class="btn btn-ghost" style="width:100%;margin-top:16px" onclick="saveSettings()">Сохранить</button>
+            <div class="settings-field"><label>🔔 Уведомления</label></div>
+            <div class="notification-box">
+                <div class="notification-row">
+                    <div class="notification-info"><div class="notification-title">Уведомления</div><div class="notification-desc">Разрешить приложению напоминать о пути.</div></div>
+                    <div class="notification-controls"><label class="switch"><input type="checkbox" id="notifyMaster" onchange="updateNotificationSetting('enabled', this.checked)"><span class="switch-slider"></span></label></div>
+                </div>
+                <div class="notification-row">
+                    <div class="notification-info"><div class="notification-title">Утреннее</div><div class="notification-desc">Напоминание о сегодняшнем дне.</div></div>
+                    <div class="notification-controls"><input class="notification-time" id="notifyMorningTime" type="time" value="09:00" onchange="updateNotificationSetting('morningTime', this.value)"><label class="switch"><input type="checkbox" id="notifyMorning" onchange="updateNotificationSetting('morning', this.checked)"><span class="switch-slider"></span></label></div>
+                </div>
+                <div class="notification-row">
+                    <div class="notification-info"><div class="notification-title">Вечернее</div><div class="notification-desc">«Как прошёл сегодняшний день?»</div></div>
+                    <div class="notification-controls"><input class="notification-time" id="notifyEveningTime" type="time" value="21:00" onchange="updateNotificationSetting('eveningTime', this.value)"><label class="switch"><input type="checkbox" id="notifyEvening" onchange="updateNotificationSetting('evening', this.checked)"><span class="switch-slider"></span></label></div>
+                </div>
+                <div class="notification-row">
+                    <div class="notification-info"><div class="notification-title">Ранги</div><div class="notification-desc">За день до новой ступени и при её достижении.</div></div>
+                    <div class="notification-controls"><label class="switch"><input type="checkbox" id="notifyRanks" onchange="updateNotificationSetting('ranks', this.checked)"><span class="switch-slider"></span></label></div>
+                </div>
+                <div class="notification-row">
+                    <div class="notification-info"><div class="notification-title">Задание дня</div><div class="notification-desc">Напомнить о задании, если оно ещё не выполнено.</div></div>
+                    <div class="notification-controls"><label class="switch"><input type="checkbox" id="notifyTask" onchange="updateNotificationSetting('task', this.checked)"><span class="switch-slider"></span></label></div>
+                </div>
+                <div class="notification-row">
+                    <div class="notification-info"><div class="notification-title">Цитаты</div><div class="notification-desc">Одна короткая мысль для пути каждый день.</div></div>
+                    <div class="notification-controls"><label class="switch"><input type="checkbox" id="notifyQuotes" onchange="updateNotificationSetting('quotes', this.checked)"><span class="switch-slider"></span></label></div>
+                </div>
+                <div class="notification-status"><span class="notification-dot" id="notifyStatusDot"></span><span id="notifyStatusText">Проверка разрешения браузера…</span></div>
+                <button class="settings-link-btn" onclick="requestNotificationPermission()">Разрешить уведомления</button>
+                <button class="settings-link-btn" onclick="sendTestNotification()">Проверить уведомление</button>
+            </div>
+
+            <button class="settings-link-btn" onclick="closeModal('settings');startOnboarding(true)">Пройти анкету заново</button>
+
+            <div class="settings-field"><label>☁️ Аккаунт и облако</label></div>
+            <div class="account-box">
+                <div class="account-status" id="accountStatus">Проверяю аккаунт...</div>
+                <button class="settings-link-btn" id="accountOpenBtn" onclick="openAccountModal()">Войти или создать аккаунт</button>
+                <button class="settings-link-btn" id="accountSignOutBtn" onclick="authSignOut()" style="display:none">Выйти из аккаунта</button>
+            </div>
+
+            <div class="settings-field"><label>🔒 Замок приложения</label></div>
+            <div class="account-box">
+                <div class="account-status" id="lockStatus">Проверяю настройки замка...</div>
+                <button class="settings-link-btn" onclick="openPinSetup()">Задать или поменять PIN-код</button>
+                <button class="settings-link-btn" id="biometricSetupBtn" onclick="setupBiometrics()">Включить отпечаток / Face ID</button>
+                <button class="settings-link-btn" id="lockDisableBtn" onclick="disableAppLock()" style="display:none">Выключить замок</button>
+            </div>
+
+            <div class="settings-field"><label>Резервная копия · перенос на новый телефон</label></div>
+            <button class="settings-link-btn" onclick="exportBackup()">Скачать файл резервной копии</button>
+            <button class="settings-link-btn" onclick="document.getElementById('importFile').click()">Восстановить из файла</button>
+            <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0])">
+
+            <button class="settings-link-btn" onclick="testWheel()">🎰 Тест колеса фортуны</button>
+            <button class="danger-btn" onclick="resetAll()">Сбросить все данные приложения</button>
+        </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="modal-overlay" id="modal-account">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAccountModal()">×</button>
+            <h2>Аккаунт пути</h2>
+            <div class="sub">Войди, чтобы твой прогресс не потерялся при смене телефона.</div>
+            <div class="settings-field"><label>Почта</label><input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+            <div class="settings-field"><label>Пароль</label><input id="accountPassword" type="password" minlength="6" autocomplete="current-password" placeholder="Минимум 6 символов"></div>
+            <div class="account-message" id="accountMessage"></div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-ghost" onclick="authSignIn()">Войти</button>
+                <button class="btn btn-violet" onclick="authSignUp()">Создать аккаунт</button>
+            </div>
+            <div class="mode-note" style="margin-top:14px">Вход через Google добавим, когда приложение будет опубликовано на сайте.</div>
+        </div>
+    </div>
+
+    <!-- PIN SETUP -->
+    <div class="modal-overlay" id="modal-pin-setup">
+        <div class="modal">
+            <button class="modal-close" onclick="closePinSetup()">×</button>
+            <h2>PIN-код</h2>
+            <div class="sub">Это замок только для этого устройства. Не забудь код, браток.</div>
+            <div class="settings-field"><label>Новый PIN</label><input id="pinSetupFirst" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="4 цифры"></div>
+            <div class="settings-field"><label>Ещё раз</label><input id="pinSetupRepeat" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="Повтори PIN"></div>
+            <div class="account-message" id="pinSetupMessage"></div>
+            <div class="modal-btns" style="margin-top:16px"><button class="btn btn-violet" onclick="savePinSetup()">Включить PIN</button></div>
+        </div>
+    </div>
+
+    <!-- APP LOCK -->
+    <div id="appLockOverlay" hidden>
+        <div class="app-lock-card">
+            <div class="lang-picker-sigil">◈</div>
+            <div class="lang-picker-title">Путь закрыт</div>
+            <div class="lang-picker-sub">Введи PIN, чтобы продолжить.</div>
+            <input id="lockPinInput" class="lock-pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="••••">
+            <div class="account-message" id="lockMessage"></div>
+            <button class="btn btn-violet" onclick="unlockWithPin()">Открыть</button>
+            <button class="settings-link-btn" id="lockBiometricBtn" onclick="unlockWithBiometrics()" style="display:none">Войти по отпечатку / Face ID</button>
+        </div>
+    </div>
+
+
+    <!-- ===== FIRST-LAUNCH ACCOUNT CHOICE ===== -->
+    <div id="account-intro-overlay" aria-hidden="true">
+        <div class="account-intro-inner">
+            <div class="account-intro-sigil">⟡</div>
+            <div class="account-intro-title" data-i18n="account_intro_title">Сохрани свой путь</div>
+            <div class="account-intro-sub" data-i18n="account_intro_sub">Ты можешь создать аккаунт и синхронизировать прогресс или продолжить без регистрации.</div>
+
+            <div class="account-intro-actions">
+                <button class="account-intro-btn primary" onclick="openAccountModal()">
+                    <span data-i18n="account_intro_signin">Войти в аккаунт</span>
+                </button>
+                <button class="account-intro-btn secondary" onclick="openAccountModal()">
+                    <span data-i18n="account_intro_signup">Зарегистрироваться</span>
+                </button>
+                <button class="account-intro-btn guest" onclick="continueAsGuest()">
+                    <span data-i18n="account_intro_guest">Продолжить без входа</span>
+                </button>
+            </div>
+
+            <div class="account-intro-note" data-i18n="account_intro_note">Аккаунт нужен только для облачной синхронизации. Можно пользоваться приложением и без него.</div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== LANGUAGE PICKER (shown before onboarding) ===== -->
+    <div id="lang-picker-overlay">
+        <div class="lang-picker-inner">
+            <div class="lang-picker-sigil">⟡</div>
+            <div class="lang-picker-title" id="langPickTitle">Выберите язык</div>
+            <div class="lang-picker-sub" id="langPickSub">Choose your language</div>
+            <div class="lang-picker-btns">
+                <button class="lang-picker-btn" onclick="pickLang('ru')">
+                    <span class="lang-flag">🇷🇺</span>
+                    <span class="lang-name">Русский</span>
+                </button>
+                <button class="lang-picker-btn" onclick="pickLang('en')">
+                    <span class="lang-flag">🇬🇧</span>
+                    <span class="lang-name">English</span>
+                </button>
+            </div>
+            <button class="lang-picker-skip" onclick="pickLang('en', true)" style="margin-top: 18px; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: rgba(237,235,230,0.5); border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.3s ease;">Skip / Use English</button>
+        </div>
+    </div>
+
+    <!-- ===== ONBOARDING ===== -->
+    <div id="onboarding-overlay" aria-hidden="true">
+        <div class="ob-top">
+            <div class="ob-brand"><span class="ob-brand-eye" aria-hidden="true"></span><span>ПУТЬ</span></div>
+            <button class="ob-skip" id="obSkipBtn" onclick="skipOnboarding()">Пропустить</button>
+        </div>
+        <div class="ob-progress" id="obProgress"></div>
+        <div class="ob-body" id="obBody"></div>
+        <div class="ob-nav" id="obNav">
+            <button class="ob-back" id="obBackBtn" onclick="obBack()">← Назад</button>
+            <button class="ob-next" id="obNextBtn" onclick="obNext()">Далее</button>
+        </div>
+    </div>
+
+    <!-- ===== WHEEL OVERLAY ===== -->
+    <div class="wheel-overlay" id="wheelOverlay">
+        <button class="wheel-close" onclick="closeWheel()">×</button>
+        <div class="wheel-title">Колесо Фортуны</div>
+        <div class="wheel-sub">Крути колесо и получи вызов на сегодня. Новый спин доступен после полуночи.</div>
+        <div class="wheel-frame" id="wheelFrame">
+            <div class="wheel-lights" id="wheelLights"></div>
+            <div class="wheel-pointer" id="wheelPointer"></div>
+            <div class="wheel-box">
+                <svg class="wheel-svg" id="wheelSvg" viewBox="0 0 100 100"><g id="wheelGroup"></g></svg>
+                <button class="wheel-center-btn" id="spinBtn" onclick="spinWheel()">КРУТИТЬ</button>
+            </div>
+        </div>
+        <div class="wheel-result" id="wheelResult">
+            <div class="wheel-result-card">
+                <div class="wheel-result-type" id="wheelResultType">ТИП</div>
+                <div class="wheel-result-text" id="wheelResultText">Задание</div>
+                <div class="wheel-result-desc" id="wheelResultDesc">Описание</div>
+            </div>
+            <button class="wheel-claim-btn" onclick="claimWheelTask()">Забрать вызов</button>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/i18n.js" defer></script>
+    <script src="js/data.js" defer></script>
+    <script src="js/state.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/app-lock.js" defer></script>
+    <script src="js/theme.js" defer></script>
+    <script src="js/cosmetics.js" defer></script>
+    <script src="js/particles.js" defer></script>
+    <script src="js/matrix-rain.js" defer></script>
+    <script src="js/parallax.js" defer></script>
+    <script src="js/home.js" defer></script>
+    <script src="js/mood.js" defer></script>
+    <script src="js/journal.js" defer></script>
+    <script src="js/calendar.js" defer></script>
+    <script src="js/stats.js" defer></script>
+    <script src="js/ranks.js" defer></script>
+    <script src="js/navigation.js" defer></script>
+    <script src="js/modals.js" defer></script>
+    <script src="js/relapse.js" defer></script>
+    <script src="js/sex-log.js" defer></script>
+    <script src="js/wheel.js" defer></script>
+    <script src="js/onboarding.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/backup.js" defer></script>
+    <script src="js/init.js" defer></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
