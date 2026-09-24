@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Удаление аккаунта — ПУТЬ</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0a0b0f;color:#ede9e3;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:min(520px,100%);background:#10131a;border:1px solid #252b36;border-radius:18px;padding:28px;box-shadow:0 20px 70px rgba(0,0,0,.35)}
+h1{margin:0 0 8px;font-size:28px}
+.sub{color:#9aa3b2;line-height:1.55;margin-bottom:24px}
+.warning{border:1px solid #8b2d38;background:#241116;border-radius:12px;padding:14px;line-height:1.5;margin-bottom:22px;color:#f0b7bd}
+label{display:block;font-size:13px;color:#aab2c0;margin:14px 0 7px}
+input{width:100%;padding:13px 14px;border-radius:10px;border:1px solid #303846;background:#0b0e13;color:#fff;font-size:16px;outline:none}
+input:focus{border-color:#6d78ff}
+button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:10px;background:#e33b4d;color:white;font-size:16px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.55;cursor:default}
+.message{min-height:22px;margin-top:15px;line-height:1.45}
+.error{color:#ff7b87}
+.success{color:#62d995}
+.note{margin-top:20px;color:#737d8d;font-size:12px;line-height:1.5}
+.brand{font-size:12px;letter-spacing:.16em;color:#8d98aa;margin-bottom:18px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">⟡ ПУТЬ</div>
+  <h1>Удаление аккаунта</h1>
+  <div class="sub">Здесь можно запросить полное удаление аккаунта ПУТЬ и связанных с ним данных без установки приложения.</div>
+
+  <div class="warning">
+    <strong>Внимание:</strong> удаление необратимо. Будут удалены аккаунт, облачный прогресс и связанные с ним данные.
+  </div>
+
+  <label for="email">Почта аккаунта</label>
+  <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+
+  <label for="password">Пароль аккаунта</label>
+  <input id="password" type="password" autocomplete="current-password" placeholder="Пароль">
+
+  <button id="deleteBtn" type="button">Удалить аккаунт и все данные</button>
+  <div id="message" class="message"></div>
+
+  <div class="note">
+    Для подтверждения удаления необходимо войти в свой аккаунт. Если вы не можете войти, обратитесь к разработчику через контакт, указанный на странице приложения в Google Play.
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://gibzdydxpavidqmzivsr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_lAGIDjSjiC-4x5d12w7CpQ_0qwo0Dbb';
+
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const btn = document.getElementById('deleteBtn');
+const message = document.getElementById('message');
+
+function show(text, type='') {
+  message.textContent = text;
+  message.className = 'message ' + type;
+}
+
+btn.addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!email || !password) {
+    show('Введите почту и пароль.', 'error');
+    return;
+  }
+
+  if (!confirm('Удалить аккаунт и все связанные данные? Это действие необратимо.')) return;
+
+  btn.disabled = true;
+  show('Удаляем аккаунт…');
+
+  try {
+    const { error: signInError } = await client.auth.signInWithPassword({ email, password });
+    if (signInError) throw signInError;
+
+    const { error: deleteError } = await client.rpc('delete_my_account');
+    if (deleteError) throw deleteError;
+
+    try { await client.auth.signOut({ scope: 'local' }); } catch (_) {}
+
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+    show('Аккаунт и связанные данные удалены.', 'success');
+  } catch (error) {
+    console.error(error);
+    show(error?.message || 'Не удалось удалить аккаунт. Проверьте данные и попробуйте снова.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
