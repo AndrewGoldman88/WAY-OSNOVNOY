@@ -14,119 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/main.css" />
     <link rel="manifest" href="manifest.json" />
-
-    <style>
-        #account-intro-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 10050;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: rgba(6, 7, 10, .96);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity .35s ease, visibility .35s ease;
-        }
-
-        #account-intro-overlay.show {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
-
-        .account-intro-inner {
-            width: min(100%, 430px);
-            text-align: center;
-            padding: 34px 24px 28px;
-            border: 1px solid var(--line, rgba(255,255,255,.12));
-            border-radius: 24px;
-            background: rgba(14, 15, 21, .88);
-            box-shadow: 0 24px 80px rgba(0,0,0,.45);
-        }
-
-        .account-intro-sigil {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 22px;
-            display: grid;
-            place-items: center;
-            border: 1px solid var(--gold, #D4AF37);
-            border-radius: 50%;
-            color: var(--gold, #D4AF37);
-            font: 700 28px/1 'Cinzel', serif;
-            box-shadow: 0 0 30px rgba(212,175,55,.12);
-        }
-
-        .account-intro-title {
-            color: var(--text, #EDEBE6);
-            font: 700 clamp(25px, 7vw, 34px)/1.15 'Cinzel', serif;
-            letter-spacing: .02em;
-        }
-
-        .account-intro-sub {
-            margin: 14px auto 26px;
-            max-width: 350px;
-            color: var(--muted, rgba(237,235,230,.62));
-            font: 400 14px/1.65 'Manrope', sans-serif;
-        }
-
-        .account-intro-actions {
-            display: grid;
-            gap: 10px;
-        }
-
-        .account-intro-btn {
-            width: 100%;
-            min-height: 52px;
-            padding: 13px 18px;
-            border-radius: 12px;
-            cursor: pointer;
-            font: 700 13px/1.2 'Manrope', sans-serif;
-            letter-spacing: .04em;
-            transition: transform .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
-        }
-
-        .account-intro-btn:active {
-            transform: scale(.985);
-        }
-
-        .account-intro-btn.primary {
-            border: 1px solid var(--violet, #8B5CF6);
-            background: var(--violet, #8B5CF6);
-            color: #fff;
-            box-shadow: 0 8px 28px rgba(139,92,246,.18);
-        }
-
-        .account-intro-btn.secondary {
-            border: 1px solid rgba(139,92,246,.5);
-            background: rgba(139,92,246,.08);
-            color: var(--text, #EDEBE6);
-        }
-
-        .account-intro-btn.guest {
-            border: 1px solid rgba(255,255,255,.12);
-            background: transparent;
-            color: rgba(237,235,230,.58);
-        }
-
-        .account-intro-note {
-            margin: 18px auto 0;
-            max-width: 350px;
-            color: rgba(237,235,230,.38);
-            font: 400 11px/1.55 'JetBrains Mono', monospace;
-        }
-
-        @media (max-width: 420px) {
-            .account-intro-inner { padding: 30px 18px 24px; }
-            .account-intro-title { font-size: 26px; }
-        }
-    </style>
-
     <meta name="application-name" content="ПУТЬ" />
     <meta name="apple-mobile-web-app-title" content="ПУТЬ" />
 </head>
@@ -467,6 +354,7 @@
                 <div class="account-status" id="accountStatus">Проверяю аккаунт...</div>
                 <button class="settings-link-btn" id="accountOpenBtn" onclick="openAccountModal()">Войти или создать аккаунт</button>
                 <button class="settings-link-btn" id="accountSignOutBtn" onclick="authSignOut()" style="display:none">Выйти из аккаунта</button>
+                <button class="danger-btn" id="accountDeleteBtn" onclick="openDeleteAccountModal()" style="display:none">Удалить аккаунт и все данные</button>
             </div>
 
             <div class="settings-field"><label>🔒 Замок приложения</label></div>
@@ -504,6 +392,20 @@
         </div>
     </div>
 
+    <!-- DELETE ACCOUNT -->
+    <div class="modal-overlay" id="modal-delete-account">
+        <div class="modal">
+            <button class="modal-close" onclick="closeDeleteAccountModal()">×</button>
+            <h2>Удалить аккаунт?</h2>
+            <div class="sub">Это действие необратимо. Будут удалены аккаунт, облачный прогресс и локальные данные приложения на этом устройстве.</div>
+            <div class="account-message" id="deleteAccountMessage"></div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Отмена</button>
+                <button class="btn btn-panic" id="deleteAccountConfirmBtn" onclick="deleteAccountAndData()">Удалить всё</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PIN SETUP -->
     <div class="modal-overlay" id="modal-pin-setup">
         <div class="modal">
@@ -527,30 +429,6 @@
             <div class="account-message" id="lockMessage"></div>
             <button class="btn btn-violet" onclick="unlockWithPin()">Открыть</button>
             <button class="settings-link-btn" id="lockBiometricBtn" onclick="unlockWithBiometrics()" style="display:none">Войти по отпечатку / Face ID</button>
-        </div>
-    </div>
-
-
-    <!-- ===== FIRST-LAUNCH ACCOUNT CHOICE ===== -->
-    <div id="account-intro-overlay" aria-hidden="true">
-        <div class="account-intro-inner">
-            <div class="account-intro-sigil">⟡</div>
-            <div class="account-intro-title" data-i18n="account_intro_title">Сохрани свой путь</div>
-            <div class="account-intro-sub" data-i18n="account_intro_sub">Ты можешь создать аккаунт и синхронизировать прогресс или продолжить без регистрации.</div>
-
-            <div class="account-intro-actions">
-                <button class="account-intro-btn primary" onclick="openAccountModal()">
-                    <span data-i18n="account_intro_signin">Войти в аккаунт</span>
-                </button>
-                <button class="account-intro-btn secondary" onclick="openAccountModal()">
-                    <span data-i18n="account_intro_signup">Зарегистрироваться</span>
-                </button>
-                <button class="account-intro-btn guest" onclick="continueAsGuest()">
-                    <span data-i18n="account_intro_guest">Продолжить без входа</span>
-                </button>
-            </div>
-
-            <div class="account-intro-note" data-i18n="account_intro_note">Аккаунт нужен только для облачной синхронизации. Можно пользоваться приложением и без него.</div>
         </div>
     </div>
 
