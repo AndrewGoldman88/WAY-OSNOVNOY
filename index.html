@@ -384,11 +384,27 @@
             <div class="settings-field"><label>Почта</label><input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
             <div class="settings-field"><label>Пароль</label><input id="accountPassword" type="password" minlength="6" autocomplete="current-password" placeholder="Минимум 6 символов"></div>
             <div class="account-message" id="accountMessage"></div>
+            <button class="settings-link-btn" id="forgotPasswordBtn" onclick="openPasswordResetModal()">Забыли пароль?</button>
             <div class="modal-btns" style="margin-top:16px">
                 <button class="btn btn-ghost" onclick="authSignIn()">Войти</button>
                 <button class="btn btn-violet" onclick="authSignUp()">Создать аккаунт</button>
             </div>
             <div class="mode-note" style="margin-top:14px">Вход через Google добавим, когда приложение будет опубликовано на сайте.</div>
+        </div>
+    </div>
+
+    <!-- PASSWORD RESET REQUEST -->
+    <div class="modal-overlay" id="modal-password-reset">
+        <div class="modal">
+            <button class="modal-close" onclick="closePasswordResetModal()">×</button>
+            <h2>Восстановление пароля</h2>
+            <div class="sub">Укажи email аккаунта. Мы отправим на него безопасную ссылку для создания нового пароля.</div>
+            <div class="settings-field"><label>Email</label><input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+            <div class="account-message" id="resetPasswordMessage"></div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-ghost" onclick="closePasswordResetModal()">Отмена</button>
+                <button class="btn btn-violet" id="resetPasswordSendBtn" onclick="sendPasswordReset()">Отправить ссылку</button>
+            </div>
         </div>
     </div>
 
@@ -419,6 +435,37 @@
         </div>
     </div>
 
+    <!-- PIN RECOVERY -->
+    <div class="modal-overlay" id="modal-pin-recovery">
+        <div class="modal">
+            <button class="modal-close" onclick="closePinRecoveryModal()">×</button>
+            <h2 data-i18n="pin_recovery_title">Восстановление PIN</h2>
+            <div class="sub" data-i18n="pin_recovery_sub">PIN хранится только на этом устройстве и восстановить старый код невозможно. Подтверди аккаунт, чтобы задать новый PIN.</div>
+            <div class="settings-field"><label data-i18n="pin_recovery_email_label">Email аккаунта</label><input id="pinRecoveryEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+            <div class="settings-field"><label data-i18n="pin_recovery_password_label">Пароль аккаунта</label><input id="pinRecoveryPassword" type="password" autocomplete="current-password" placeholder="Пароль"></div>
+            <div class="account-message" id="pinRecoveryMessage"></div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-ghost" onclick="openPasswordResetFromPinRecovery()" data-i18n="pin_recovery_forgot_password">Забыли пароль?</button>
+                <button class="btn btn-violet" onclick="authorizePinRecovery()" data-i18n="pin_recovery_confirm_btn">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW PIN AFTER RECOVERY -->
+    <div class="modal-overlay" id="modal-pin-recovery-new">
+        <div class="modal">
+            <button class="modal-close" onclick="closePinRecoveryNewModal()">×</button>
+            <h2 data-i18n="pin_recovery_new_title">Новый PIN</h2>
+            <div class="sub" data-i18n="pin_recovery_new_sub">Придумай новый 4-значный код. Старый PIN восстановить нельзя.</div>
+            <div class="settings-field"><label data-i18n="pin_recovery_new_label">Новый PIN</label><input id="pinRecoveryNewFirst" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="4 цифры"></div>
+            <div class="settings-field"><label data-i18n="pin_recovery_repeat_label">Ещё раз</label><input id="pinRecoveryNewRepeat" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="Повтори PIN"></div>
+            <div class="account-message" id="pinRecoveryNewMessage"></div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="btn btn-violet" onclick="saveRecoveredPin()" data-i18n="pin_recovery_save_btn">Сохранить новый PIN</button>
+            </div>
+        </div>
+    </div>
+
     <!-- APP LOCK -->
     <div id="appLockOverlay" hidden>
         <div class="app-lock-card">
@@ -429,6 +476,7 @@
             <div class="account-message" id="lockMessage"></div>
             <button class="btn btn-violet" onclick="unlockWithPin()">Открыть</button>
             <button class="settings-link-btn" id="lockBiometricBtn" onclick="unlockWithBiometrics()" style="display:none">Войти по отпечатку / Face ID</button>
+            <button class="settings-link-btn" id="lockForgotPinBtn" onclick="openPinRecoveryModal()" data-i18n="pin_recovery_forgot_pin_btn">Забыли PIN-код?</button>
         </div>
     </div>
 
