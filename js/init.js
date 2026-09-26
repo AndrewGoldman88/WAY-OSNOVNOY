@@ -103,6 +103,9 @@
         window.closeAccountModal = closeAccountModal;
         window.authSignUp = authSignUp;
         window.authSignIn = authSignIn;
+        window.openPasswordResetModal = openPasswordResetModal;
+        window.closePasswordResetModal = closePasswordResetModal;
+        window.sendPasswordReset = sendPasswordReset;
         window.authSignOut = authSignOut;
         window.openPinSetup = openPinSetup;
         window.closePinSetup = closePinSetup;
@@ -111,5 +114,12 @@
         window.setupBiometrics = setupBiometrics;
         window.unlockWithPin = unlockWithPin;
         window.unlockWithBiometrics = unlockWithBiometrics;
+        window.openPinRecoveryModal = openPinRecoveryModal;
+        window.closePinRecoveryModal = closePinRecoveryModal;
+        window.openPinRecoveryNewModal = openPinRecoveryNewModal;
+        window.closePinRecoveryNewModal = closePinRecoveryNewModal;
+        window.authorizePinRecovery = authorizePinRecovery;
+        window.saveRecoveredPin = saveRecoveredPin;
+        window.openPasswordResetFromPinRecovery = openPasswordResetFromPinRecovery;
         initAuth();
         initAppLock();

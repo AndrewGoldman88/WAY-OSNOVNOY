@@ -322,6 +322,28 @@ const TRANSLATIONS = {
         pin_mismatch: 'Коды не совпадают.',
         pin_enabled_toast: 'PIN-код включён',
 
+        /* ── PIN recovery ── */
+        pin_recovery_title: 'Восстановление PIN',
+        pin_recovery_sub: 'PIN хранится только на этом устройстве и восстановить старый код невозможно. Подтверди аккаунт, чтобы задать новый PIN.',
+        pin_recovery_email_label: 'Email аккаунта',
+        pin_recovery_email_placeholder: 'you@example.com',
+        pin_recovery_password_label: 'Пароль аккаунта',
+        pin_recovery_password_placeholder: 'Пароль',
+        pin_recovery_forgot_password: 'Забыли пароль?',
+        pin_recovery_confirm_btn: 'Подтвердить',
+        pin_recovery_new_title: 'Новый PIN',
+        pin_recovery_new_sub: 'Придумай новый 4-значный код. Старый PIN восстановить нельзя.',
+        pin_recovery_new_label: 'Новый PIN',
+        pin_recovery_new_placeholder: '4 цифры',
+        pin_recovery_repeat_label: 'Ещё раз',
+        pin_recovery_repeat_placeholder: 'Повтори PIN',
+        pin_recovery_save_btn: 'Сохранить новый PIN',
+        pin_recovery_forgot_pin_btn: 'Забыли PIN-код?',
+        pin_recovery_fill_fields: 'Заполни email и пароль.',
+        pin_recovery_checking: 'Проверяю аккаунт...',
+        pin_recovery_failed: message => `Не удалось подтвердить аккаунт: ${message}`,
+        pin_recovered_toast: 'PIN-код восстановлен',
+
         app_lock_title: 'Путь закрыт',
         app_lock_sub: 'Введи PIN, чтобы продолжить.',
         app_lock_placeholder: '••••',
@@ -651,6 +673,28 @@ const TRANSLATIONS = {
         pin_mismatch: 'Codes don\'t match.',
         pin_enabled_toast: 'PIN code enabled',
 
+        /* ── PIN recovery ── */
+        pin_recovery_title: 'PIN recovery',
+        pin_recovery_sub: 'Your PIN is stored only on this device, and the old code cannot be recovered. Verify your account to set a new PIN.',
+        pin_recovery_email_label: 'Account email',
+        pin_recovery_email_placeholder: 'you@example.com',
+        pin_recovery_password_label: 'Account password',
+        pin_recovery_password_placeholder: 'Password',
+        pin_recovery_forgot_password: 'Forgot password?',
+        pin_recovery_confirm_btn: 'Confirm',
+        pin_recovery_new_title: 'New PIN',
+        pin_recovery_new_sub: 'Choose a new 4-digit code. The old PIN cannot be recovered.',
+        pin_recovery_new_label: 'New PIN',
+        pin_recovery_new_placeholder: '4 digits',
+        pin_recovery_repeat_label: 'Repeat',
+        pin_recovery_repeat_placeholder: 'Repeat PIN',
+        pin_recovery_save_btn: 'Save new PIN',
+        pin_recovery_forgot_pin_btn: 'Forgot PIN?',
+        pin_recovery_fill_fields: 'Enter your email and password.',
+        pin_recovery_checking: 'Checking account...',
+        pin_recovery_failed: message => `Could not verify the account: ${message}`,
+        pin_recovered_toast: 'PIN recovered',
+
         app_lock_title: 'Path locked',
         app_lock_sub: 'Enter your PIN to continue.',
         app_lock_placeholder: '••••',
@@ -964,6 +1008,39 @@ function applyLang() {
     const pinEnableBtn = document.querySelector('#modal-pin-setup .btn-violet');
     if (pinEnableBtn) pinEnableBtn.textContent = L('pin_enable_btn');
 
+    /* PIN recovery modals */
+    const pinRecoveryH = document.querySelector('#modal-pin-recovery h2');
+    if (pinRecoveryH) pinRecoveryH.textContent = L('pin_recovery_title');
+    const pinRecoverySub = document.querySelector('#modal-pin-recovery .sub');
+    if (pinRecoverySub) pinRecoverySub.textContent = L('pin_recovery_sub');
+    const pinRecoveryEmailLabel = document.querySelector('#pinRecoveryEmail')?.closest('.settings-field')?.querySelector('label');
+    if (pinRecoveryEmailLabel) pinRecoveryEmailLabel.textContent = L('pin_recovery_email_label');
+    const pinRecoveryEmail = document.getElementById('pinRecoveryEmail');
+    if (pinRecoveryEmail) pinRecoveryEmail.placeholder = L('pin_recovery_email_placeholder');
+    const pinRecoveryPasswordLabel = document.querySelector('#pinRecoveryPassword')?.closest('.settings-field')?.querySelector('label');
+    if (pinRecoveryPasswordLabel) pinRecoveryPasswordLabel.textContent = L('pin_recovery_password_label');
+    const pinRecoveryPassword = document.getElementById('pinRecoveryPassword');
+    if (pinRecoveryPassword) pinRecoveryPassword.placeholder = L('pin_recovery_password_placeholder');
+    const pinRecoveryForgot = document.querySelector('#modal-pin-recovery .btn-ghost');
+    if (pinRecoveryForgot) pinRecoveryForgot.textContent = L('pin_recovery_forgot_password');
+    const pinRecoveryConfirm = document.querySelector('#modal-pin-recovery .btn-violet');
+    if (pinRecoveryConfirm) pinRecoveryConfirm.textContent = L('pin_recovery_confirm_btn');
+
+    const pinRecoveryNewH = document.querySelector('#modal-pin-recovery-new h2');
+    if (pinRecoveryNewH) pinRecoveryNewH.textContent = L('pin_recovery_new_title');
+    const pinRecoveryNewSub = document.querySelector('#modal-pin-recovery-new .sub');
+    if (pinRecoveryNewSub) pinRecoveryNewSub.textContent = L('pin_recovery_new_sub');
+    const pinRecoveryNewFirstLabel = document.querySelector('#pinRecoveryNewFirst')?.closest('.settings-field')?.querySelector('label');
+    if (pinRecoveryNewFirstLabel) pinRecoveryNewFirstLabel.textContent = L('pin_recovery_new_label');
+    const pinRecoveryNewFirst = document.getElementById('pinRecoveryNewFirst');
+    if (pinRecoveryNewFirst) pinRecoveryNewFirst.placeholder = L('pin_recovery_new_placeholder');
+    const pinRecoveryNewRepeatLabel = document.querySelector('#pinRecoveryNewRepeat')?.closest('.settings-field')?.querySelector('label');
+    if (pinRecoveryNewRepeatLabel) pinRecoveryNewRepeatLabel.textContent = L('pin_recovery_repeat_label');
+    const pinRecoveryNewRepeat = document.getElementById('pinRecoveryNewRepeat');
+    if (pinRecoveryNewRepeat) pinRecoveryNewRepeat.placeholder = L('pin_recovery_repeat_placeholder');
+    const pinRecoverySave = document.querySelector('#modal-pin-recovery-new .btn-violet');
+    if (pinRecoverySave) pinRecoverySave.textContent = L('pin_recovery_save_btn');
+
     /* App lock overlay */
     const lockTitle = document.querySelector('#appLockOverlay .lang-picker-title');
     if (lockTitle) lockTitle.textContent = L('app_lock_title');
@@ -975,6 +1052,8 @@ function applyLang() {
     if (lockOpenBtn) lockOpenBtn.textContent = L('app_lock_open_btn');
     const lockBiometricBtn = document.getElementById('lockBiometricBtn');
     if (lockBiometricBtn) lockBiometricBtn.textContent = L('app_lock_biometric_btn');
+    const lockForgotPinBtn = document.getElementById('lockForgotPinBtn');
+    if (lockForgotPinBtn) lockForgotPinBtn.textContent = L('pin_recovery_forgot_pin_btn');
 
     /* Обновляем динамические статусы аккаунта/замка на текущий язык */
     if (typeof updateAccountUI === 'function') updateAccountUI();

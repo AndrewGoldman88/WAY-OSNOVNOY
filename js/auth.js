@@ -5,6 +5,7 @@
    ========================================================= */
 const SUPABASE_URL = 'https://gibzdydxpavidqmzivsr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_lAGIDjSjiC-4x5d12w7CpQ_0qwo0Dbb';
+const PASSWORD_RESET_URL = 'https://andrewgoldman88.github.io/put-app-pages/reset-password.html';
 
 let cloudClient = null;
 let cloudUser = null;
@@ -84,6 +85,64 @@ function openAccountModal() {
 
 function closeAccountModal() {
     document.getElementById('modal-account').classList.remove('show');
+}
+
+function setPasswordResetMessage(message, isError) {
+    const el = document.getElementById('resetPasswordMessage');
+    if (!el) return;
+    el.textContent = message || '';
+    el.classList.toggle('error', !!isError);
+}
+
+function openPasswordResetModal(prefillEmail = '') {
+    const sourceEmail = prefillEmail || document.getElementById('accountEmail')?.value.trim() || '';
+    const input = document.getElementById('resetEmail');
+    if (input) input.value = sourceEmail;
+    setPasswordResetMessage('');
+    document.getElementById('modal-password-reset')?.classList.add('show');
+}
+
+function closePasswordResetModal() {
+    document.getElementById('modal-password-reset')?.classList.remove('show');
+}
+
+async function sendPasswordReset() {
+    const email = document.getElementById('resetEmail')?.value.trim() || '';
+    if (!email) {
+        setPasswordResetMessage(t('password_reset_enter_email'), true);
+        return;
+    }
+    if (!cloudClient) {
+        const ready = await loadSupabaseLibrary();
+        if (ready) await initAuth();
+    }
+    if (!cloudClient) {
+        setPasswordResetMessage(t('auth_err_not_ready'), true);
+        return;
+    }
+
+    const btn = document.getElementById('resetPasswordSendBtn');
+    if (btn) btn.disabled = true;
+    setPasswordResetMessage(t('password_reset_sending'));
+
+    try {
+        const { error } = await cloudClient.auth.resetPasswordForEmail(email, {
+            redirectTo: PASSWORD_RESET_URL
+        });
+        if (error) throw error;
+        setPasswordResetMessage(t('password_reset_sent'));
+    } catch (error) {
+        console.error('Supabase password reset error:', error);
+        setPasswordResetMessage(translateAuthError(error?.message || error), true);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function openPasswordResetFromPinRecovery() {
+    const email = document.getElementById('pinRecoveryEmail')?.value.trim() || '';
+    closePinRecoveryModal();
+    openPasswordResetModal(email);
 }
 
 function cloudStateFrom(value) {

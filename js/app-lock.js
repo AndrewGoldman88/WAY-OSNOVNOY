@@ -6,6 +6,7 @@
 const APP_LOCK_KEY = 'retention_app_lock_v1';
 let appLock = loadAppLock();
 let appUnlocked = false;
+let pinRecoveryOpen = false;
 
 function loadAppLock() {
     try {
@@ -147,19 +148,44 @@ async function setupBiometrics() {
 }
 
 function showAppLock() {
-    if (!appLock.pinHash) return;
-    appUnlocked = false;
+    if (!appLock.pinHash || pinRecoveryOpen) return;
+
     const overlay = document.getElementById('appLockOverlay');
+    const input = document.getElementById('lockPinInput');
+    if (!overlay || !input) return;
+
+    appUnlocked = false;
     overlay.hidden = false;
-    document.getElementById('lockPinInput').value = '';
-    document.getElementById('lockMessage').textContent = '';
-    document.getElementById('lockBiometricBtn').style.display = appLock.biometricId ? 'block' : 'none';
-    setTimeout(() => document.getElementById('lockPinInput').focus(), 50);
+    overlay.removeAttribute('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    input.value = '';
+    const message = document.getElementById('lockMessage');
+    if (message) {
+        message.textContent = '';
+        message.classList.remove('error');
+    }
+
+    const bio = document.getElementById('lockBiometricBtn');
+    if (bio) bio.style.display = appLock.biometricId ? 'block' : 'none';
+
+    const forgotBtn = document.getElementById('lockForgotPinBtn');
+    if (forgotBtn) forgotBtn.style.display = 'block';
+
+    setTimeout(() => {
+        if (!appUnlocked && !overlay.hidden) {
+            try { input.focus(); } catch (_) {}
+        }
+    }, 80);
 }
 
 function hideAppLock() {
     appUnlocked = true;
-    document.getElementById('appLockOverlay').hidden = true;
+    const overlay = document.getElementById('appLockOverlay');
+    if (!overlay) return;
+
+    overlay.hidden = true;
+    overlay.setAttribute('aria-hidden', 'true');
 }
 
 async function unlockWithPin() {
@@ -192,14 +218,239 @@ async function unlockWithBiometrics() {
     }
 }
 
-function initAppLock() {
+function setPinRecoveryMessage(message, isError) {
+    const el = document.getElementById('pinRecoveryMessage');
+    if (!el) return;
+    el.textContent = message || '';
+    el.classList.toggle('error', !!isError);
+}
+
+function setPinRecoveryNewMessage(message, isError) {
+    const el = document.getElementById('pinRecoveryNewMessage');
+    if (!el) return;
+    el.textContent = message || '';
+    el.classList.toggle('error', !!isError);
+}
+
+function openPinRecoveryModal() {
+    // Recovery is an alternative to unlocking with PIN. The lock overlay
+    // must disappear immediately so the recovery modal is actually usable.
+    pinRecoveryOpen = true;
+    appUnlocked = false;
+
+    const lockOverlay = document.getElementById('appLockOverlay');
+    if (lockOverlay) {
+        lockOverlay.hidden = true;
+        lockOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    // On a first launch the language picker/onboarding can be underneath the
+    // lock. Temporarily hide them so recovery is the only visible flow.
+    const langPicker = document.getElementById('lang-picker-overlay');
+    const onboarding = document.getElementById('onboarding-overlay');
+    if (langPicker) langPicker.dataset.hiddenForPinRecovery = langPicker.style.display || '';
+    if (onboarding) onboarding.dataset.hiddenForPinRecovery = onboarding.style.display || '';
+    if (langPicker) langPicker.style.display = 'none';
+    if (onboarding) onboarding.style.display = 'none';
+
+    const emailInput = document.getElementById('pinRecoveryEmail');
+    if (emailInput) emailInput.value = (typeof cloudUser !== 'undefined' && cloudUser?.email) ? cloudUser.email : '';
+    const passInput = document.getElementById('pinRecoveryPassword');
+    if (passInput) passInput.value = '';
+    setPinRecoveryMessage('');
+
+    const modal = document.getElementById('modal-pin-recovery');
+    if (modal) {
+        modal.classList.add('show');
+        // Make absolutely sure it is above every other overlay.
+        modal.style.zIndex = '1000001';
+    }
+    setTimeout(() => emailInput?.focus(), 50);
+}
+
+function closePinRecoveryModal() {
+    document.getElementById('modal-pin-recovery')?.classList.remove('show');
+    pinRecoveryOpen = false;
+
+    // Restore the normal locked state. We intentionally do not unlock the app.
+    const langPicker = document.getElementById('lang-picker-overlay');
+    const onboarding = document.getElementById('onboarding-overlay');
+    if (langPicker) {
+        const previous = langPicker.dataset.hiddenForPinRecovery;
+        if (previous !== undefined) {
+            langPicker.style.display = previous;
+            delete langPicker.dataset.hiddenForPinRecovery;
+        }
+    }
+    if (onboarding) {
+        const previous = onboarding.dataset.hiddenForPinRecovery;
+        if (previous !== undefined) {
+            onboarding.style.display = previous;
+            delete onboarding.dataset.hiddenForPinRecovery;
+        }
+    }
+
+    if (appLock.pinHash && !appUnlocked) showAppLock();
+}
+
+function openPinRecoveryNewModal() {
+    document.getElementById('pinRecoveryNewFirst').value = '';
+    document.getElementById('pinRecoveryNewRepeat').value = '';
+    setPinRecoveryNewMessage('');
+    const modal = document.getElementById('modal-pin-recovery-new');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.zIndex = '1000001';
+    }
+    setTimeout(() => document.getElementById('pinRecoveryNewFirst')?.focus(), 50);
+}
+
+function closePinRecoveryNewModal() {
+    document.getElementById('modal-pin-recovery-new')?.classList.remove('show');
+}
+
+async function authorizePinRecovery() {
+    const email = document.getElementById('pinRecoveryEmail')?.value.trim() || '';
+    const password = document.getElementById('pinRecoveryPassword')?.value || '';
+    if (!email || !password) {
+        setPinRecoveryMessage(t('pin_recovery_fill_fields'), true);
+        return;
+    }
+    if (typeof cloudClient === 'undefined' || !cloudClient) {
+        const ready = await loadSupabaseLibrary();
+        if (ready) await initAuth();
+    }
+    if (typeof cloudClient === 'undefined' || !cloudClient) {
+        setPinRecoveryMessage(t('auth_err_not_ready'), true);
+        return;
+    }
+
+    setPinRecoveryMessage(t('pin_recovery_checking'));
+    try {
+        const { data, error } = await cloudClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        if (!data?.user) throw new Error('No authenticated user');
+
+        // Password authentication is the recovery authorization. We never read
+        // or transmit the old PIN; only the local hash is replaced.
+        closePinRecoveryModal();
+        openPinRecoveryNewModal();
+    } catch (error) {
+        console.error('PIN recovery authorization failed:', error);
+        setPinRecoveryMessage(t('pin_recovery_failed')(translateAuthError(error?.message || error)), true);
+    }
+}
+
+async function saveRecoveredPin() {
+    const first = document.getElementById('pinRecoveryNewFirst')?.value || '';
+    const repeat = document.getElementById('pinRecoveryNewRepeat')?.value || '';
+    if (!/^\d{4}$/.test(first)) {
+        setPinRecoveryNewMessage(t('pin_need_4_digits'), true);
+        return;
+    }
+    if (first !== repeat) {
+        setPinRecoveryNewMessage(t('pin_mismatch'), true);
+        return;
+    }
+
+    const salt = randomText(16);
+    appLock = { pinHash: await pinHash(first, salt), salt, biometricId: null };
+    saveAppLock();
+    appUnlocked = true;
+    pinRecoveryOpen = false;
     updateLockUI();
-    if (appLock.pinHash) showAppLock();
-    document.getElementById('lockPinInput').addEventListener('keydown', event => {
+    closePinRecoveryNewModal();
+
+    // Restore any first-launch overlay that was temporarily hidden for recovery.
+    const langPicker = document.getElementById('lang-picker-overlay');
+    const onboarding = document.getElementById('onboarding-overlay');
+    if (langPicker) {
+        const previous = langPicker.dataset.hiddenForPinRecovery;
+        if (previous !== undefined) {
+            langPicker.style.display = previous;
+            delete langPicker.dataset.hiddenForPinRecovery;
+        }
+    }
+    if (onboarding) {
+        const previous = onboarding.dataset.hiddenForPinRecovery;
+        if (previous !== undefined) {
+            onboarding.style.display = previous;
+            delete onboarding.dataset.hiddenForPinRecovery;
+        }
+    }
+
+    hideAppLock();
+    if (typeof showToast === 'function') showToast(t('pin_recovered_toast'));
+}
+
+let appLockInitialized = false;
+let appLockVisibilityHandlerInstalled = false;
+
+function initAppLock() {
+    // Идемпотентная инициализация: init.js может вызвать её повторно,
+    // а сам app-lock.js дополнительно страхует запуск.
+    if (appLockInitialized) {
+        updateLockUI();
+        if (appLock.pinHash && !appUnlocked) showAppLock();
+        return;
+    }
+
+    const overlay = document.getElementById('appLockOverlay');
+    const pinInput = document.getElementById('lockPinInput');
+
+    if (!overlay || !pinInput) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAppLock, { once: true });
+        } else {
+            setTimeout(initAppLock, 0);
+        }
+        return;
+    }
+
+    appLockInitialized = true;
+    appLock = loadAppLock();
+    updateLockUI();
+
+    pinInput.addEventListener('keydown', event => {
         if (event.key === 'Enter') unlockWithPin();
     });
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden && appLock.pinHash && appUnlocked) appUnlocked = false;
-        if (!document.hidden && appLock.pinHash && !appUnlocked) showAppLock();
-    });
+
+    if (!appLockVisibilityHandlerInstalled) {
+        appLockVisibilityHandlerInstalled = true;
+
+        document.addEventListener('visibilitychange', () => {
+            if (!appLock.pinHash) return;
+
+            if (document.hidden) {
+                appUnlocked = false;
+                return;
+            }
+
+            if (!appUnlocked) showAppLock();
+        });
+
+        window.addEventListener('pageshow', () => {
+            if (appLock.pinHash && !appUnlocked) showAppLock();
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (appLock.pinHash) appUnlocked = false;
+        });
+    }
+
+    // Если PIN уже установлен, приложение всегда стартует закрытым.
+    if (appLock.pinHash) {
+        appUnlocked = false;
+        showAppLock();
+    } else {
+        appUnlocked = true;
+        hideAppLock();
+    }
+}
+
+// Страховка: замок работает даже если init.js не успел вызвать initAppLock.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAppLock, { once: true });
+} else {
+    initAppLock();
 }
